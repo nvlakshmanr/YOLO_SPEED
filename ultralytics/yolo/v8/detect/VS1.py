@@ -192,6 +192,7 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
         # create new buffer for new object
         if id not in data_deque:
             data_deque[id] = deque(maxlen=64)
+            speed_line_queue[id] = []
         color = compute_color_for_labels(object_id[i])
         obj_name = names[object_id[i]]
         label = '{}{:d}'.format("", id) + ":" + '%s' % (obj_name)
