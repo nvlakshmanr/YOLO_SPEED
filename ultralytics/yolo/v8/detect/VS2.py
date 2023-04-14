@@ -146,25 +146,25 @@ def ccw(A, B, C):
     return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
 
 
-#def get_direction(point1, point2):
-#    direction_str = ""
-#    # calculate y axis direction
-#    if point1[1] > point2[1]:
-#        direction_str += "South"
-#    elif point1[1] < point2[1]:
-#        direction_str += "North"
-#    else:
-#        direction_str += ""
-#
-#    # calculate x axis direction
-#    if point1[0] > point2[0]:
-#        direction_str += "East"
-#    elif point1[0] < point2[0]:
-#        direction_str += "West"
-#    else:
-#        direction_str += ""
-#
-#    return direction_str
+def get_direction(point1, point2):
+    direction_str = ""
+    # calculate y axis direction
+    if point1[1] > point2[1]:
+        direction_str += "South"
+    elif point1[1] < point2[1]:
+        direction_str += "North"
+    else:
+        direction_str += ""
+
+    # calculate x axis direction
+    if point1[0] > point2[0]:
+        direction_str += "East"
+    elif point1[0] < point2[0]:
+        direction_str += "West"
+    else:
+        direction_str += ""
+
+    return direction_str
 
 
 def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
@@ -200,21 +200,21 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
         # add center to buffer
         data_deque[id].appendleft(center)
         if len(data_deque[id]) >= 2:
-#            direction = get_direction(data_deque[id][0], data_deque[id][1])
+            direction = get_direction(data_deque[id][0], data_deque[id][1])
             object_speed = estimatespeed(data_deque[id][1], data_deque[id][0])
             speed_line_queue[id].append(object_speed)
-#            if intersect(data_deque[id][0], data_deque[id][1], line[0], line[1]):
-#                cv2.line(img, line[0], line[1], (255, 255, 255), 3)
-#                if "South" in direction:
-#                    if obj_name not in object_counter:
-#                        object_counter[obj_name] = 1
-#                    else:
-#                        object_counter[obj_name] += 1
-#                if "North" in direction:
-#                    if obj_name not in object_counter1:
-#                        object_counter1[obj_name] = 1
-#                    else:
-#                        object_counter1[obj_name] += 1
+            if intersect(data_deque[id][0], data_deque[id][1], line[0], line[1]):
+                cv2.line(img, line[0], line[1], (255, 255, 255), 3)
+                if "South" in direction:
+                    if obj_name not in object_counter:
+                        object_counter[obj_name] = 1
+                    else:
+                        object_counter[obj_name] += 1
+                if "North" in direction:
+                    if obj_name not in object_counter1:
+                        object_counter1[obj_name] = 1
+                    else:
+                        object_counter1[obj_name] += 1
         try:
             label = label + "" + str(sum(speed_line_queue[id])//len(speed_line_queue[id])) + "km/h"
         except:
@@ -231,23 +231,23 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
             # draw trails
             cv2.line(img, data_deque[id][i - 1], data_deque[id][i], color, thickness)
 
-#        # 4. Display Count in top right corner
-#        for idx, (key, value) in enumerate(object_counter1.items()):
-#            cnt_str = str(key) + ":" + str(value)
-#            cv2.line(img, (width - 500, 25), (width, 25), [85, 45, 255], 40)
-#            cv2.putText(img, f'Number of Vehicles Entering', (width - 500, 35), 0, 1, [225, 255, 255], thickness=2,
-#                        lineType=cv2.LINE_AA)
-#            cv2.line(img, (width - 150, 65 + (idx * 40)), (width, 65 + (idx * 40)), [85, 45, 255], 30)
-#            cv2.putText(img, cnt_str, (width - 150, 75 + (idx * 40)), 0, 1, [255, 255, 255], thickness=2,
-#                        lineType=cv2.LINE_AA)
-#
-#        for idx, (key, value) in enumerate(object_counter.items()):
-#            cnt_str1 = str(key) + ":" + str(value)
-#            cv2.line(img, (20, 25), (500, 25), [85, 45, 255], 40)
-#            cv2.putText(img, f'Numbers of Vehicles Leaving', (11, 35), 0, 1, [225, 255, 255], thickness=2,
-#                        lineType=cv2.LINE_AA)
-#            cv2.line(img, (20, 65 + (idx * 40)), (127, 65 + (idx * 40)), [85, 45, 255], 30)
-#            cv2.putText(img, cnt_str1, (11, 75 + (idx * 40)), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
+        # 4. Display Count in top right corner
+        for idx, (key, value) in enumerate(object_counter1.items()):
+            cnt_str = str(key) + ":" + str(value)
+            cv2.line(img, (width - 500, 25), (width, 25), [85, 45, 255], 40)
+            cv2.putText(img, f'Number of Vehicles Entering', (width - 500, 35), 0, 1, [225, 255, 255], thickness=2,
+                        lineType=cv2.LINE_AA)
+            cv2.line(img, (width - 150, 65 + (idx * 40)), (width, 65 + (idx * 40)), [85, 45, 255], 30)
+            cv2.putText(img, cnt_str, (width - 150, 75 + (idx * 40)), 0, 1, [255, 255, 255], thickness=2,
+                        lineType=cv2.LINE_AA)
+
+        for idx, (key, value) in enumerate(object_counter.items()):
+            cnt_str1 = str(key) + ":" + str(value)
+            cv2.line(img, (20, 25), (500, 25), [85, 45, 255], 40)
+            cv2.putText(img, f'Numbers of Vehicles Leaving', (11, 35), 0, 1, [225, 255, 255], thickness=2,
+                        lineType=cv2.LINE_AA)
+            cv2.line(img, (20, 65 + (idx * 40)), (127, 65 + (idx * 40)), [85, 45, 255], 30)
+            cv2.putText(img, cnt_str1, (11, 75 + (idx * 40)), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
 
     return img
 
