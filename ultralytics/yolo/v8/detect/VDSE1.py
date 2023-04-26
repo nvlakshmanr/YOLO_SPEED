@@ -1,3 +1,10 @@
+from IPython.display import display, Javascript, Image
+from google.colab.output import eval_js
+from google.colab.patches import cv2_imshow
+from base64 import b64decode, b64encode
+import PIL
+import io
+import html
 import hydra
 import torch
 import argparse
@@ -16,23 +23,22 @@ from deep_sort_pytorch.utils.parser import get_config
 from deep_sort_pytorch.deep_sort import DeepSort
 from collections import deque
 import numpy as np
+import matplotlib.pyplot as plt
+%matplotlib inline
 
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
 data_deque = {}
 deepsort = None
-line = [(100, 500), (1050, 500)]
-line1 = [(0, 550), (1300, 550)]
-line2 = [(0, 800), (1300, 800)]
 speed_line_queue = {}
-object_counter = {}
-object_counter1 = {}
 
 def estimatespeed(location1, location2):
     d_pixel = math.sqrt(math.pow(location2[0] - location1[0], 2) + math.pow(location2[1] - location1[1], 2))
-    ppm = 8
+    ppm = 11.5
     d_meters = d_pixel/ppm
-    time_constant = 15*3.6
-    speed = d_meters*time_constant
+    fps = 60
+    time_constant = (1/fps)
+    time_taken = time_constant / 3.6
+    speed = d_meters / time_taken
     return int(speed)
 
 def init_tracker():
@@ -139,42 +145,8 @@ def intersect(A, B, C, D):
 def ccw(A, B, C):
     return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
 
-
-def get_direction(point1, point2):
-    direction_str = ""
-    # calculate y axis direction
-    if point1[1] > point2[1]:
-        direction_str += "South"
-    elif point1[1] < point2[1]:
-        direction_str += "North"
-    else:
-        direction_str += ""
-
-    # calculate x axis direction
-    if point1[0] > point2[0]:
-        direction_str += "East"
-    elif point1[0] < point2[0]:
-        direction_str += "West"
-    else:
-        direction_str += ""
-
-    return direction_str
-
-
 def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
-    cv2.line(img, line[0], line[1], (46, 162, 112), 3)
-
-    height, width, _ = img.shape
-    w1 = width
-    h1 = height/2
-    h2 = 3*height/4
-    line1 = [(0, 450), (1300, 450)]
-    line2 = [(0, 550), (1300, 550)]
-    
-    cv2.line(img, line1[0], line1[1], (255, 255, 0), 3)
-    cv2.line(img, line2[0], line2[1], (0, 0, 255), 3)
-    
-    
+    height, width, _ = img.shape    
     # remove tracked point from buffer if object is lost
     for key in list(data_deque):
         if key not in identities:
@@ -207,23 +179,6 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
             direction = get_direction(data_deque[id][0], data_deque[id][1])
             object_speed = estimatespeed(data_deque[id][1], data_deque[id][0])
             speed_line_queue[id].append(object_speed)
-            if intersect(data_deque[id][0], data_deque[id][1], line2[0], line2[1]):
-                cv2.line(img, line2[0], line2[1], (255, 255, 255), 3)
-            if intersect(data_deque[id][0], data_deque[id][1], line1[0], line1[1]):
-                cv2.line(img, line1[0], line1[1], (255, 255, 255), 3)    
-            if intersect(data_deque[id][0], data_deque[id][1], line[0], line[1]):
-                cv2.line(img, line[0], line[1], (255, 255, 255), 3)
-                if "South" in direction:
-                    if obj_name not in object_counter:
-                        object_counter[obj_name] = 1
-                    else:
-                        object_counter[obj_name] += 1
-                if "North" in direction:
-                    if obj_name not in object_counter1:
-                        object_counter1[obj_name] = 1
-                    else:
-                        object_counter1[obj_name] += 1
-        try:
             label = label + "" + str(sum(speed_line_queue[id])//len(speed_line_queue[id])) + "km/h"
         except:
             pass
@@ -238,27 +193,7 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
             thickness = int(np.sqrt(64 / float(i + i)) * 1.5)
             # draw trails
             cv2.line(img, data_deque[id][i - 1], data_deque[id][i], color, thickness)
-
-        # 4. Display Count in top right corner
-        for idx, (key, value) in enumerate(object_counter1.items()):
-            cnt_str = str(key) + ":" + str(value)
-            cv2.line(img, (width - 500, 25), (width, 25), [85, 45, 255], 40)
-            cv2.putText(img, f'Number of Vehicles Entering', (width - 500, 35), 0, 1, [225, 255, 255], thickness=2,
-                        lineType=cv2.LINE_AA)
-            cv2.line(img, (width - 150, 65 + (idx * 40)), (width, 65 + (idx * 40)), [85, 45, 255], 30)
-            cv2.putText(img, cnt_str, (width - 150, 75 + (idx * 40)), 0, 1, [255, 255, 255], thickness=2,
-                        lineType=cv2.LINE_AA)
-
-        for idx, (key, value) in enumerate(object_counter.items()):
-            cnt_str1 = str(key) + ":" + str(value)
-            cv2.line(img, (20, 25), (500, 25), [85, 45, 255], 40)
-            cv2.putText(img, f'Numbers of Vehicles Leaving', (11, 35), 0, 1, [225, 255, 255], thickness=2,
-                        lineType=cv2.LINE_AA)
-            cv2.line(img, (20, 65 + (idx * 40)), (127, 65 + (idx * 40)), [85, 45, 255], 30)
-            cv2.putText(img, cnt_str1, (11, 75 + (idx * 40)), 0, 1, [225, 255, 255], thickness=2, lineType=cv2.LINE_AA)
-
     return img
-
 
 class DetectionPredictor(BasePredictor):
 
@@ -281,7 +216,6 @@ class DetectionPredictor(BasePredictor):
         for i, pred in enumerate(preds):
             shape = orig_img[i].shape if self.webcam else orig_img.shape
             pred[:, :4] = ops.scale_boxes(img.shape[2:], pred[:, :4], shape).round()
-
         return preds
 
     def write_results(self, idx, preds, batch):
@@ -297,13 +231,11 @@ class DetectionPredictor(BasePredictor):
             frame = self.dataset.count
         else:
             frame = getattr(self.dataset, 'frame', 0)
-
         self.data_path = p
         save_path = str(self.save_dir / p.name)  # im.jpg
         self.txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if self.dataset.mode == 'image' else f'_{frame}')
         log_string += '%gx%g ' % im.shape[2:]  # print string
         self.annotator = self.get_annotator(im0)
-
         det = preds[idx]
         all_outputs.append(det)
         if len(det) == 0:
@@ -325,17 +257,13 @@ class DetectionPredictor(BasePredictor):
             oids.append(int(cls))
         xywhs = torch.Tensor(xywh_bboxs)
         confss = torch.Tensor(confs)
-
         outputs = deepsort.update(xywhs, confss, oids, im0)
         if len(outputs) > 0:
             bbox_xyxy = outputs[:, :4]
             identities = outputs[:, -2]
             object_id = outputs[:, -1]
-
             draw_boxes(im0, bbox_xyxy, self.model.names, object_id, identities)
-
         return log_string
-
 
 @hydra.main(version_base=None, config_path=str(DEFAULT_CONFIG.parent), config_name=DEFAULT_CONFIG.name)
 def predict(cfg):
