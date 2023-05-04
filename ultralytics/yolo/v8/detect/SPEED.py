@@ -22,12 +22,12 @@ data_deque = {}
 deepsort = None
 object_counter = {}
 object_counter1 = {}
-line = [(100, 500), (1050, 500)]
+# line = [(100, 500), (1050, 500)]
 speed_line_queue = {}
 
 def estimatespeed(location1, location2):
     d_pixel = math.sqrt(math.pow(location2[0] - location1[0], 2) + math.pow(location2[1] - location1[1], 2))
-    ppm = 8.8
+    ppm = 16
     d_meters = d_pixel/ppm
     fps = 30
     time_constant = 1 / fps
@@ -114,7 +114,7 @@ def draw_border(img, pt1, pt2, color, thickness, r, d):
 
 def UI_box(x, img, color=None, label=None, line_thickness=None):
     # Plots one bounding box on image img
-    tl = line_thickness or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
+    tl = line_thickness #######################or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
     color = color or [random.randint(0, 255) for _ in range(3)]
     c1, c2 = (int(x[0]), int(x[1])), (int(x[2]), int(x[3]))
     cv2.rectangle(img, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
@@ -122,7 +122,7 @@ def UI_box(x, img, color=None, label=None, line_thickness=None):
         tf = max(tl - 1, 1)  # font thickness
         t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
         img = draw_border(img, (c1[0], c1[1] - t_size[1] - 3), (c1[0] + t_size[0], c1[1] + 3), color, 1, 8, 2)
-        cv2.putText(img, label, (c1[0], c1[1] - 2), 0, tl / 3, [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
+        cv2.putText(img, label, (c1[0], c1[1] - 2), 0, 0.5, [225, 255, 255], thickness = 1, lineType=cv2.LINE_AA)
 
 def intersect(A, B, C, D):
     return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
@@ -152,8 +152,12 @@ def get_direction(point1, point2):
 
 
 def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
-    cv2.line(img, line[0], line[1], (46, 162, 112), 3)
-    height, width, _ = img.shape
+    ###########cv2.line(img, line[0], line[1], (46, 162, 112), 3)
+    height, width, channels = img.shape
+    line = [(0, 500), (width, 500)]
+    cv2.line(img, line[0], line[1], ( 0, 255, 0), 3)
+
+    W1 = width / 2
     for key in list(data_deque):
         if key not in identities:
             data_deque.pop(key)
@@ -174,9 +178,9 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
         data_deque[id].appendleft(center)
         if len(data_deque[id]) >= 2:
             direction = get_direction(data_deque[id][0], data_deque[id][1])
-            if y2 >= 400 and y2 <=500 :
-                object_speed = estimatespeed(data_deque[id][1], data_deque[id][0])
-                speed_line_queue[id].append(object_speed)
+            #########if y2 >= 400 and y2 <=500 :
+            object_speed = estimatespeed(data_deque[id][1], data_deque[id][0])
+            speed_line_queue[id].append(object_speed)
             if intersect(data_deque[id][0], data_deque[id][1], line[0], line[1]):
                 cv2.line(img, line[0], line[1], (255, 255, 255), 3)
                 if "South" in direction:
@@ -198,23 +202,24 @@ def draw_boxes(img, bbox, names, object_id, identities=None, offset=(0, 0)):
         for i in range(1, len(data_deque[id])):
             if data_deque[id][i - 1] is None or data_deque[id][i] is None:
                 continue
-            thickness = int(np.sqrt(64 / float(i + i)) * 1.5)
+            thickness = 3 ################## int(np.sqrt(64 / float(i + i)) * 1.5)
             cv2.line(img, data_deque[id][i - 1], data_deque[id][i], color, thickness)
-
+        
+        
+        cv2.line(img, ( 20, 20), ( 300, 20), [ 225, 0, 0], 20)
+        cv2.putText(img, f'Numbers of Vehicles Leaving', (20, 23), 0, 0.5, [225, 255, 255], thickness = 1, lineType=cv2.LINE_AA)   
         for idx, (key, value) in enumerate(object_counter1.items()):
-            cnt_str = str(key) + ":" + str(value)
-            cv2.line(img, ((width/2) + 20, 10), ( width - 20, 10), [ 0, 0, 139], 20)
-            cv2.putText(img, f'Number of Vehicles Entering', (width - 500, 35), 0, 1, [225, 255, 255], thickness = 1, lineType=cv2.LINE_AA)
-            cv2.line(img, (width - 150, 65 + (idx * 40)), (width, 65 + (idx * 40)), [ 0, 0, 139], 10)
-            cv2.putText(img, cnt_str, (width - 150, 75 + (idx * 40)), 0, 1, [255, 255, 255], thickness = 1,lineType=cv2.LINE_AA)
-
-        for idx, (key, value) in enumerate(object_counter.items()):
             cnt_str1 = str(key) + ":" + str(value)
-            cv2.line(img, ( 20, 10), ((width/2) - 20, 10), [ 0, 0, 139], 20)
-            cv2.putText(img, f'Numbers of Vehicles Leaving', (11, 35), 0, 1, [225, 255, 255], thickness = 1, lineType=cv2.LINE_AA)
-            cv2.line(img, (20, 65 + (idx * 40)), (127, 65 + (idx * 40)), [ 0, 0, 139], 10)
-            cv2.putText(img, cnt_str1, (11, 75 + (idx * 40)), 0, 1, [225, 255, 255], thickness = 1, lineType=cv2.LINE_AA)
+            cv2.line(img, (20, 40 + (idx * 20)), (100, 40 + (idx * 20)), [ 255, 0, 0], 20)
+            cv2.putText(img, cnt_str1, (20, 43 + (idx * 20)), 0, 0.5, [225, 255, 255], thickness = 1, lineType=cv2.LINE_AA)
 
+        cv2.line(img, ( width - 300 , 20), ( width - 20, 20), [ 255, 0, 0], 20)            
+        cv2.putText(img, f'Number of Vehicles Entering', (width - 300, 23), 0, 0.5, [225, 255, 255], thickness = 1, lineType=cv2.LINE_AA)
+        for idx, (key, value) in enumerate(object_counter.items()):
+            cnt_str = str(key) + ":" + str(value)
+            cv2.line(img, (width - 100, 40 + (idx * 20)), (width - 20, 40 + (idx * 20)), [ 255, 0, 0], 20)
+            cv2.putText(img, cnt_str, (width - 100, 40 + (idx * 20)), 0, 0.5, [255, 255, 255], thickness = 1,lineType=cv2.LINE_AA)
+      
     return img
 
 
@@ -296,11 +301,16 @@ class DetectionPredictor(BasePredictor):
 
 
 @hydra.main(version_base=None, config_path=str(DEFAULT_CONFIG.parent), config_name=DEFAULT_CONFIG.name)
-def predict(cfg):
+
+def predict(cfg, classes=['car', 'bus', 'truck', 'motorcycle']):
     init_tracker()
     cfg.model = cfg.model or "yolov8n.pt"
     cfg.imgsz = check_imgsz(cfg.imgsz, min_dim=2)  # check image size
     cfg.source = cfg.source if cfg.source is not None else ROOT / "assets"
+    
+    # Define class file(s)
+    cfg.data = {'names': classes, 'nc': len(classes), 'train': cfg.source}
+    
     predictor = DetectionPredictor(cfg)
     predictor()
 
